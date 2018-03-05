@@ -1,7 +1,12 @@
 [package]
 name = "carddav"
 version = "0.1.0"
+description = "CardDAV client library"
 authors = ["Gökberk Yaltıraklı <webdosusb@gmail.com>"]
+documentation = "https://docs.rs/carddav"
+license = "MIT"
+repository = "https://github.com/gkbrk/carddav-rs"
+homepage = "https://github.com/gkbrk/carddav-rs"
 
 [dependencies]
 reqwest = "0.8"
