@@ -11,7 +11,7 @@ use reqwest::header::ContentType;
 use minidom::Element;
 use failure::Error;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Credentials {
     username: String,
     password: String,
@@ -33,6 +33,7 @@ lazy_static! {
     static ref PROPFIND: Method = Method::Extension("PROPFIND".into());
 }
 
+#[derive(Debug, Clone)]
 pub struct CardDAV {
     cred: Credentials,
     client: reqwest::Client,
@@ -103,7 +104,7 @@ impl CardDAV {
         Ok(self.cred.server.to_string() + href.into())
     }
 
-    pub fn addressbook_urls(&self) -> Result<Vec<Addressbook>, Error> {
+    pub fn addressbooks(&self) -> Result<Vec<Addressbook>, Error> {
         let home_set = self.addressbook_home_set()?;
         let mut resp = self.client
             .request(PROPFIND.clone(), home_set.as_str())
@@ -115,7 +116,6 @@ impl CardDAV {
             .send()?;
 
         let xml = resp.text()?;
-        println!("{}", xml);
         let el: Element = xml.parse()?;
         let books = el.children().skip(1);
 
@@ -128,6 +128,7 @@ impl CardDAV {
             let ctag = prop.children().find(|e| e.name() == "getctag").unwrap();
 
             let addr = Addressbook {
+                cd: self.clone(),
                 url: href.texts().next().unwrap().into(),
                 display_name: name.texts().next().unwrap().into(),
                 etag: etag.texts().next().unwrap().into(),
@@ -142,10 +143,28 @@ impl CardDAV {
 
 #[derive(Debug)]
 pub struct Addressbook {
+    cd: CardDAV,
     url: String,
     display_name: String,
     etag: String,
     ctag: String,
+}
+
+impl Addressbook {
+    pub fn vcard_dump(&self) -> Result<String, Error> {
+        let dump_url = self.cd.cred.server.to_string() + &self.url;
+        let mut resp = self.cd
+            .client
+            .get(dump_url.as_str())
+            .header(Depth(1))
+            .basic_auth(
+                self.cd.cred.username.as_str(),
+                Some(self.cd.cred.password.as_str()),
+            )
+            .send()?;
+
+        Ok(resp.text()?)
+    }
 }
 
 fn find_element_recursive<'a>(el: &'a Element, name: &str) -> Option<&'a Element> {
@@ -159,19 +178,3 @@ fn find_element_recursive<'a>(el: &'a Element, name: &str) -> Option<&'a Element
 
     None
 }
-
-/*
-pub fn get_addressbooks(cr: Credentials) -> Result<(), Error> {
-    let c = Client::new();
-
-    let method = Method::Extension("PROPFIND".into());
-    let mut resp = c.request(method, &*get_principal(cr.clone())?)
-        .header(Depth(1))
-        .basic_auth(cr.username, Some(cr.password))
-        .send()?;
-
-    println!("{}", resp.text()?);
-
-    Ok(())
-}
-*/
