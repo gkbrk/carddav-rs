@@ -6,8 +6,8 @@ extern crate lazy_static;
 extern crate minidom;
 extern crate reqwest;
 
-use reqwest::header::ContentType;
 use reqwest::{Client, Method, StatusCode};
+use reqwest::header::{ContentType, IfNoneMatch};
 use minidom::Element;
 use failure::Error;
 
@@ -31,6 +31,7 @@ impl Credentials {
 header! { (Depth, "Depth") => [u8] }
 lazy_static! {
     static ref PROPFIND: Method = Method::Extension("PROPFIND".into());
+    static ref REPORT: Method = Method::Extension("REPORT".into());
 }
 
 #[derive(Debug, Clone)]
@@ -180,6 +181,22 @@ impl Addressbook {
             .send()?;
 
         Ok(resp.text()?)
+    }
+
+    pub fn create_contact(&self, id: &str, vcard: &str) -> Result<(), Error> {
+        let create_url = self.cd.cred.server.to_string() + &self.url + id + ".vcf";
+        let mut resp = self.cd
+            .client
+            .put(create_url.as_str())
+            .header(ContentType("text/vcard".parse()?))
+            .header(IfNoneMatch::Any)
+            .body(vcard.clone().to_string())
+            .basic_auth(
+                self.cd.cred.username.as_str(),
+                Some(self.cd.cred.password.as_str()),
+            ).send()?;
+
+        Ok(())
     }
 }
 
