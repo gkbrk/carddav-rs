@@ -124,15 +124,27 @@ impl CardDAV {
             let prop = find_element_recursive(&book, "prop").unwrap();
             let href = book.children().find(|e| e.name() == "href").unwrap();
             let name = prop.children().find(|e| e.name() == "displayname").unwrap();
-            let etag = prop.children().find(|e| e.name() == "getetag").unwrap();
-            let ctag = prop.children().find(|e| e.name() == "getctag").unwrap();
+
+            let etag = {
+                match prop.children().find(|e| e.name() == "getetag") {
+                    Some(etag) => Some(etag.texts().next().unwrap_or("").into()),
+                    None => None,
+                }
+            };
+
+            let ctag = {
+                match prop.children().find(|e| e.name() == "getctag") {
+                    Some(etag) => Some(etag.texts().next().unwrap_or("").into()),
+                    None => None,
+                }
+            };
 
             let addr = Addressbook {
                 cd: self.clone(),
                 url: href.texts().next().unwrap().into(),
                 display_name: name.texts().next().unwrap().into(),
-                etag: etag.texts().next().unwrap().into(),
-                ctag: ctag.texts().next().unwrap().into(),
+                etag: etag,
+                ctag: ctag,
             };
             address_books.push(addr);
         }
@@ -146,8 +158,8 @@ pub struct Addressbook {
     cd: CardDAV,
     url: String,
     display_name: String,
-    etag: String,
-    ctag: String,
+    etag: Option<String>,
+    ctag: Option<String>,
 }
 
 impl Addressbook {
