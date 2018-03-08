@@ -1,6 +1,6 @@
 [package]
 name = "carddav"
-version = "0.1.0"
+version = "0.1.1"
 description = "CardDAV client library"
 authors = ["Gökberk Yaltıraklı <webdosusb@gmail.com>"]
 documentation = "https://docs.rs/carddav"
