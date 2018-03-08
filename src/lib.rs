@@ -6,8 +6,8 @@ extern crate lazy_static;
 extern crate minidom;
 extern crate reqwest;
 
-use reqwest::{Client, Method};
 use reqwest::header::ContentType;
+use reqwest::{Client, Method, StatusCode};
 use minidom::Element;
 use failure::Error;
 
@@ -57,6 +57,10 @@ impl CardDAV {
                 Some(self.cred.password.as_str()),
             )
             .send()?;
+
+        if resp.status() == StatusCode::NotFound {
+            return Ok(self.cred.server.to_owned() + "/");
+        }
 
         Ok(resp.url().clone().into_string())
     }
