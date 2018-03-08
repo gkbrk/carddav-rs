@@ -172,8 +172,10 @@ impl Addressbook {
         let dump_url = self.cd.cred.server.to_string() + &self.url;
         let mut resp = self.cd
             .client
-            .get(dump_url.as_str())
+            .request(REPORT.clone(), dump_url.as_str())
             .header(Depth(1))
+            .header(ContentType("application/xml".parse()?))
+            .body("<c:addressbook-query xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:carddav\"><d:prop><d:getetag /><c:address-data /></d:prop></c:addressbook-query>")
             .basic_auth(
                 self.cd.cred.username.as_str(),
                 Some(self.cd.cred.password.as_str()),
